@@ -1,0 +1,37 @@
+# Fixed question your INFO agent should answer every day.
+question: "What new information appeared today about AI agents, web search, and GitHub automation?"
+
+# Output folders. The agent creates these if missing.
+reports_dir: "reports"
+raw_dir: "raw"
+history_index: "history/index.jsonl"
+
+# OpenAI settings.
+openai_model: "gpt-5.5"
+embedding_model: "text-embedding-3-small"
+web_max_items: 12
+
+# De-duplication settings.
+# 0.86-0.90 is a useful range for concept-level matching.
+embedding_similarity_threshold: 0.88
+same_entity_similarity_threshold: 0.82
+
+# GitHub Search API settings.
+github_max_items_per_query: 10
+github_min_delay_seconds: 2.5
+
+# Use {since} and {today} placeholders. They are filled as YYYY-MM-DD.
+# Keep queries short: GitHub Search queries have length/operator limits.
+github_queries:
+  - type: repositories
+    q: "AI agent web search pushed:>{since}"
+    sort: "updated"
+    order: "desc"
+  - type: issues
+    q: "\"web_search\" \"agent\" updated:>{since} is:issue"
+    sort: "updated"
+    order: "desc"
+  - type: issues
+    q: "\"Responses API\" \"web_search\" updated:>{since} is:issue"
+    sort: "updated"
+    order: "desc"
