@@ -108,6 +108,8 @@ def load_config(path: Path) -> Dict[str, Any]:
     cfg.setdefault("history_index", "history/index.jsonl")
     cfg.setdefault("openai_model", "gpt-5.5")
     cfg.setdefault("embedding_model", "text-embedding-3-small")
+    cfg.setdefault("embedding_base_url", "")
+    cfg.setdefault("embedding_api_key", "")
     cfg.setdefault("web_max_items", 12)
     cfg.setdefault("github_max_items_per_query", 10)
     cfg.setdefault("github_min_delay_seconds", 2.5)
@@ -174,7 +176,7 @@ def safe_json_loads(text: str) -> Any:
 
 def require_openai_client() -> Any:
     if OpenAI is None:
-        raise RuntimeError("OpenAI package is not installed. Run: pip install openai")
+        raise RuntimeError("OpenAI package is not installed. Install dependencies with `uv pip install -r requirements.txt`.")
     if not os.environ.get("OPENAI_API_KEY"):
         raise RuntimeError("OPENAI_API_KEY is missing.")
     return OpenAI()
@@ -184,7 +186,17 @@ def embed_items(items: List[ConceptPoint], cfg: Dict[str, Any]) -> None:
     missing = [item for item in items if item.embedding is None]
     if not missing:
         return
-    client = require_openai_client()
+
+    if OpenAI is None:
+        raise RuntimeError("OpenAI package is not installed. Install dependencies with `uv pip install -r requirements.txt`.")
+
+    base_url = str(cfg.get("embedding_base_url", "")).strip()
+    api_key = str(cfg.get("embedding_api_key", "")).strip()
+    if base_url:
+        client = OpenAI(base_url=base_url, api_key=api_key or os.environ.get("OPENAI_API_KEY") or "not-needed")
+    else:
+        client = require_openai_client()
+
     model = cfg["embedding_model"]
     batch_size = 64
     for i in range(0, len(missing), batch_size):
