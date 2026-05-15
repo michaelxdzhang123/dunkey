@@ -1,0 +1,25 @@
+question: "What new information appeared today about physical ai platform or software "
+
+reports_dir: "reports"
+raw_dir: "raw"
+history_index: "history/index.jsonl"
+
+openai_model: "Qwen3"
+web_max_items: 12
+
+embedding_similarity_threshold: 0.88
+same_entity_similarity_threshold: 0.82
+
+github_max_items_per_query: 10
+github_min_delay_seconds: 2.5
+
+github_queries:
+  - type: repositories
+    q: "AI agent web search pushed:>{since}"
+    sort: "updated"
+    order: "desc"
+
+  - type: issues
+    q: "\"web_search\" \"agent\" updated:>{since} is:issue"
+    sort: "updated"
+    order: "desc"
