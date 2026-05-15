@@ -8,8 +8,11 @@ history_index: "history/index.jsonl"
 
 # OpenAI settings.
 openai_model: "gpt-5.5"
-embedding_model: "text-embedding-3-small"
+embedding_model: "Qwen3-Embedding-8B-Q4_K_M"
+embedding_base_url: "http://172.28.21.22:11434/v1"
+embedding_api_key: ""
 web_max_items: 12
+web_enabled: true
 
 # De-duplication settings.
 # 0.86-0.90 is a useful range for concept-level matching.

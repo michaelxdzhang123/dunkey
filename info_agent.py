@@ -108,12 +108,15 @@ def load_config(path: Path) -> Dict[str, Any]:
     cfg.setdefault("history_index", "history/index.jsonl")
     cfg.setdefault("openai_model", "gpt-5.5")
     cfg.setdefault("embedding_model", "text-embedding-3-small")
+    cfg.setdefault("embedding_base_url", "")
+    cfg.setdefault("embedding_api_key", "")
     cfg.setdefault("web_max_items", 12)
     cfg.setdefault("github_max_items_per_query", 10)
     cfg.setdefault("github_min_delay_seconds", 2.5)
     cfg.setdefault("embedding_similarity_threshold", 0.88)
     cfg.setdefault("same_entity_similarity_threshold", 0.82)
     cfg.setdefault("github_queries", [])
+    cfg.setdefault("web_enabled", True)
     return cfg
 
 
@@ -174,7 +177,7 @@ def safe_json_loads(text: str) -> Any:
 
 def require_openai_client() -> Any:
     if OpenAI is None:
-        raise RuntimeError("OpenAI package is not installed. Run: pip install openai")
+        raise RuntimeError("OpenAI package is not installed. Install dependencies with `uv pip install -r requirements.txt`.")
     if not os.environ.get("OPENAI_API_KEY"):
         raise RuntimeError("OPENAI_API_KEY is missing.")
     return OpenAI()
@@ -184,7 +187,17 @@ def embed_items(items: List[ConceptPoint], cfg: Dict[str, Any]) -> None:
     missing = [item for item in items if item.embedding is None]
     if not missing:
         return
-    client = require_openai_client()
+
+    if OpenAI is None:
+        raise RuntimeError("OpenAI package is not installed. Install dependencies with `uv pip install -r requirements.txt`.")
+
+    base_url = str(cfg.get("embedding_base_url", "")).strip()
+    api_key = str(cfg.get("embedding_api_key", "")).strip()
+    if base_url:
+        client = OpenAI(base_url=base_url, api_key=api_key or os.environ.get("OPENAI_API_KEY") or "not-needed")
+    else:
+        client = require_openai_client()
+
     model = cfg["embedding_model"]
     batch_size = 64
     for i in range(0, len(missing), batch_size):
@@ -643,11 +656,15 @@ def append_history(index_path: Path, novel: List[ConceptPoint]) -> None:
 
 def collect(cfg: Dict[str, Any], skip_web: bool = False, skip_github: bool = False) -> List[ConceptPoint]:
     items: List[ConceptPoint] = []
-    if not skip_web:
-        try:
-            items.extend(web_search_openai(cfg["question"], cfg))
-        except Exception as e:
-            print(f"[WARN] Web search failed: {e}", file=sys.stderr)
+    web_enabled = bool(cfg.get("web_enabled", True))
+    if not skip_web and web_enabled:
+        if not os.environ.get("OPENAI_API_KEY"):
+            print("[WARN] OPENAI_API_KEY is missing. Skipping web search. Set web_enabled: false to silence this warning.", file=sys.stderr)
+        else:
+            try:
+                items.extend(web_search_openai(cfg["question"], cfg))
+            except Exception as e:
+                print(f"[WARN] Web search failed: {e}", file=sys.stderr)
     if not skip_github:
         try:
             items.extend(github_search(cfg))

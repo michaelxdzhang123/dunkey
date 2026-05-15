@@ -11,13 +11,13 @@ Daily INFO agent that:
 ## Setup
 
 ```bash
-python -m venv .venv
+uv venv
 source .venv/bin/activate
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 cp config.example.yaml config.yaml
 export OPENAI_API_KEY="..."
 export GITHUB_TOKEN="..."   # optional for public repo search, required/recommended for code search
-python info_agent.py --config config.yaml
+uv run python info_agent.py --config config.yaml
 ```
 
 ## Daily automation with cron
@@ -25,7 +25,7 @@ python info_agent.py --config config.yaml
 Run every morning at 08:00:
 
 ```cron
-0 8 * * * cd /path/to/info-agent-starter && /path/to/.venv/bin/python info_agent.py --config config.yaml >> logs/cron.log 2>&1
+0 8 * * * cd /path/to/info-agent-starter && /path/to/info-agent-starter/.venv/bin/python info_agent.py --config config.yaml >> logs/cron.log 2>&1
 ```
 
 ## Daily automation with GitHub Actions
@@ -50,8 +50,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install -r requirements.txt
-      - run: python info_agent.py --config config.yaml
+      - run: uv pip install -r requirements.txt
+      - run: uv run python info_agent.py --config config.yaml
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -80,3 +80,36 @@ Each report embeds hidden metadata comments like:
 ```
 
 That lets the agent rebuild history from Markdown files even if `history/index.jsonl` is deleted.
+
+
+## Local embedding model (optional)
+
+If you run embeddings on a local OpenAI-compatible endpoint (for example Ollama), set the embedding config values in `config.yaml`:
+
+```yaml
+embedding_model: "Qwen3-Embedding-8B-Q4_K_M"
+embedding_base_url: "http://172.28.21.22:11434/v1"
+embedding_api_key: ""
+```
+
+Notes:
+- `embedding_base_url` only applies to embedding generation.
+- Web search still uses the main OpenAI client (`OPENAI_API_KEY`) because it depends on hosted web-search tools.
+
+
+## API key and ChatGPT subscription note
+
+A ChatGPT Plus/Pro/Team subscription and OpenAI API billing are separate products.
+
+- If you only have a ChatGPT subscription, `OPENAI_API_KEY` may be unavailable for API calls.
+- In that case, set `web_enabled: false` and use GitHub search + local embeddings.
+- Web search via Responses API requires an API key with API billing enabled.
+
+Example for no API key mode:
+
+```yaml
+web_enabled: false
+embedding_model: "Qwen3-Embedding-8B-Q4_K_M"
+embedding_base_url: "http://172.28.21.22:11434/v1"
+embedding_api_key: ""
+```
