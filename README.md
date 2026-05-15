@@ -95,3 +95,4 @@ embedding_api_key: ""
 Notes:
 - `embedding_base_url` only applies to embedding generation.
 - Web search still uses the main OpenAI client (`OPENAI_API_KEY`) because it depends on hosted web-search tools.
+

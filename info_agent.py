@@ -116,6 +116,7 @@ def load_config(path: Path) -> Dict[str, Any]:
     cfg.setdefault("embedding_similarity_threshold", 0.88)
     cfg.setdefault("same_entity_similarity_threshold", 0.82)
     cfg.setdefault("github_queries", [])
+    cfg.setdefault("web_enabled", True)
     return cfg
 
 
@@ -655,11 +656,15 @@ def append_history(index_path: Path, novel: List[ConceptPoint]) -> None:
 
 def collect(cfg: Dict[str, Any], skip_web: bool = False, skip_github: bool = False) -> List[ConceptPoint]:
     items: List[ConceptPoint] = []
-    if not skip_web:
-        try:
-            items.extend(web_search_openai(cfg["question"], cfg))
-        except Exception as e:
-            print(f"[WARN] Web search failed: {e}", file=sys.stderr)
+    web_enabled = bool(cfg.get("web_enabled", True))
+    if not skip_web and web_enabled:
+        if not os.environ.get("OPENAI_API_KEY"):
+            print("[WARN] OPENAI_API_KEY is missing. Skipping web search. Set web_enabled: false to silence this warning.", file=sys.stderr)
+        else:
+            try:
+                items.extend(web_search_openai(cfg["question"], cfg))
+            except Exception as e:
+                print(f"[WARN] Web search failed: {e}", file=sys.stderr)
     if not skip_github:
         try:
             items.extend(github_search(cfg))
